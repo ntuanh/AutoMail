@@ -3,12 +3,11 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
+import os
 
-from key import (
-    EMAIL,
-    PASSWORD
-)
+EMAIL = os.getenv("EMAIL")
 
+PASSWORD = os.getenv("PASSWORD")
 
 def send_mail(
     to_email,
