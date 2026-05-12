@@ -43,7 +43,7 @@ Chào {student['name']} 😄
 Đừng quên rằng hôm nay bạn có lịch trực nhật Lab lúc 17:30 nhé!
 
 Chú ý:
-- Mail này được gửi tự động lúc 10 AM để nhắc bạn về lịch trực nhật =))
+- Mail này được gửi tự động để nhắc bạn về lịch trực nhật =))
 - Nếu vì lí do bận bạn có thể đổi với người khác.
 - Nếu bạn quên trực nhật thì sẽ phải nộp quỹ Lab 20.000 VNĐ.
 
