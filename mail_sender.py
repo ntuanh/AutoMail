@@ -1,115 +1,91 @@
+import os
 import smtplib
-
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
-import os
 
 EMAIL = os.getenv("EMAIL")
-
 PASSWORD = os.getenv("PASSWORD")
 
-def send_mail(
-    to_email,
-    subject,
-    body,
-    image_path
-):
 
-    msg = MIMEMultipart(
-        "related"
-    )
+def send_mail(to_email, subject, body, image_path=None):
+    print("=" * 60)
+    print("[MAIL] START")
+    print(f"[MAIL] TO: {to_email}")
+    print(f"[MAIL] SUBJECT: {subject}")
+    print(f"[MAIL] IMAGE: {image_path}")
+    print("=" * 60)
 
-    msg["Subject"] = subject
-    msg["From"] = EMAIL
-    msg["To"] = to_email
+    try:
+        msg = MIMEMultipart("related")
+        msg["Subject"] = subject
+        msg["From"] = EMAIL
+        msg["To"] = to_email
+        msg["Reply-To"] = EMAIL
+        msg["X-Mailer"] = "Python SMTP"
 
-    html = f"""
-    <html>
+        img_html = ""
+        if image_path is not None:
+            img_html = """
+            <img src="cid:lab_image"
+                 width="100%"
+                 style="border-radius: 10px;">
+            """
 
-    <body style="
-        font-family: Arial;
-        line-height: 1.6;
-    ">
+        html = f"""
+        <html>
+        <body style="font-family: Arial; line-height: 1.6;">
+            <div style="max-width: 700px; margin: auto; padding: 20px; border-radius: 12px; background-color: #f8f9fa;">
+                {img_html}
+                <div style="padding-top:20px;">
+                    {body.replace(chr(10), "<br>")}
+                </div>
+            </div>
+        </body>
+        </html>
+        """
 
-    <div style="
-        max-width: 700px;
-        margin: auto;
-        padding: 20px;
-        border-radius: 12px;
-        background-color: #f8f9fa;
-    ">
+        msg.attach(MIMEText(html, "html", "utf-8"))
 
-        <img src="cid:lab_image"
-             width="100%"
-             style="border-radius: 10px;">
+        if image_path is not None:
+            if not os.path.exists(image_path):
+                raise FileNotFoundError(f"Không tìm thấy file ảnh tại: {image_path}")
 
-        <div style="padding-top:20px;">
+            print("[MAIL] Loading image...")
+            with open(image_path, "rb") as f:
+                img = MIMEImage(f.read())
+                img.add_header("Content-ID", "<lab_image>")
+                img.add_header(
+                    "Content-Disposition",
+                    "inline",
+                    filename=os.path.basename(image_path)
+                )
+                msg.attach(img)
 
-            {body.replace(chr(10), "<br>")}
+        print("[SMTP] Connecting...")
+        server = smtplib.SMTP("smtp.office365.com", 587)
+        server.set_debuglevel(1)
 
-        </div>
+        print("[SMTP] EHLO")
+        server.ehlo()
+        print("[SMTP] STARTTLS")
+        server.starttls()
+        print("[SMTP] EHLO AGAIN")
+        server.ehlo()
 
-    </div>
+        print("[SMTP] LOGIN")
+        server.login(EMAIL, PASSWORD)
+        print("[SMTP] LOGIN SUCCESS")
 
-    </body>
-    </html>
-    """
+        response = server.sendmail(EMAIL, [to_email], msg.as_string())
+        print("[SMTP] SEND RESPONSE:")
+        print(response)
 
-    msg.attach(
-        MIMEText(
-            html,
-            "html",
-            "utf-8"
-        )
-    )
+        server.quit()
+        print(f"[SUCCESS] Sent to {to_email}")
 
-    with open(
-        image_path,
-        "rb"
-    ) as f:
-
-        # img = MIMEImage(
-        #     f.read()
-        # )
-        img = MIMEImage(
-            f.read(),
-            _subtype="jpeg"
-        )
-
-        img.add_header(
-            "Content-ID",
-            "<lab_image>"
-        )
-
-        img.add_header(
-            "Content-Disposition",
-            "inline",
-            filename=image_path
-        )
-
-        msg.attach(img)
-
-    server = smtplib.SMTP(
-        "smtp.office365.com",
-        587
-    )
-
-    server.starttls()
-
-    server.login(
-        EMAIL,
-        PASSWORD
-    )
-
-    server.sendmail(
-        EMAIL,
-        to_email,
-        msg.as_string()
-    )
-
-    server.quit()
-
-    print(
-        f"[SUCCESS] Sent to {to_email}"
-    )
+    except Exception as e:
+        print("[ERROR] SEND MAIL FAILED")
+        print(type(e).__name__)
+        print(str(e))
+        raise
