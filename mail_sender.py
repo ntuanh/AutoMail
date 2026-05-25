@@ -1,5 +1,6 @@
 import os
 import smtplib
+import mimetypes
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
@@ -25,11 +26,11 @@ def send_mail(to_email, subject, body, image_path=None):
         msg["X-Mailer"] = "Python SMTP"
 
         img_html = ""
-        if image_path is not None:
+        if image_path:
             img_html = """
-            <img src="cid:lab_image"
-                 width="100%"
-                 style="border-radius: 10px;">
+                <img src="cid:lab_image" 
+                     width="100%" 
+                     style="border-radius: 10px;">
             """
 
         html = f"""
@@ -53,14 +54,21 @@ def send_mail(to_email, subject, body, image_path=None):
 
             print("[MAIL] Loading image...")
             with open(image_path, "rb") as f:
-                img = MIMEImage(f.read())
-                img.add_header("Content-ID", "<lab_image>")
-                img.add_header(
-                    "Content-Disposition",
-                    "inline",
-                    filename=os.path.basename(image_path)
-                )
-                msg.attach(img)
+                image_bytes = f.read()
+
+            mime_type, _ = mimetypes.guess_type(image_path)
+            subtype = None
+            if mime_type and mime_type.startswith("image/"):
+                subtype = mime_type.split("/", 1)[1]
+
+            img = MIMEImage(image_bytes, _subtype=subtype)
+            img.add_header("Content-ID", "<lab_image>")
+            img.add_header(
+                "Content-Disposition",
+                "inline",
+                filename=os.path.basename(image_path)
+            )
+            msg.attach(img)
 
         print("[SMTP] Connecting...")
         server = smtplib.SMTP("smtp.office365.com", 587)
